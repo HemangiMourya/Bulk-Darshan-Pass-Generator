@@ -1,0 +1,46 @@
+# =============================================================================
+# hpa.yaml
+# Assignment requirement: Horizontal Pod Autoscaler for the frontend
+# Scales the pass-frontend Deployment between 1 and 5 replicas based on
+# average CPU utilisation (target 50 %).
+#
+# Behaviour tuning:
+#   scaleUp   stabilizationWindowSeconds: 0   – scale up immediately when
+#             CPU exceeds the threshold so we can observe quick reactions.
+#   scaleDown stabilizationWindowSeconds: 120 – wait 2 minutes before scaling
+#             down so the scale-down event is visible within a lab session
+#             and can be cleanly captured in verification screenshots.
+# =============================================================================
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: pass-frontend-hpa
+  labels:
+    app: pass-frontend
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: pass-frontend
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 15
+    scaleDown:
+      stabilizationWindowSeconds: 120
+      policies:
+        - type: Percent
+          value: 25
+          periodSeconds: 60

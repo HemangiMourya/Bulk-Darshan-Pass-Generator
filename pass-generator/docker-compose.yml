@@ -1,0 +1,45 @@
+# =============================================================================
+# docker-compose.yml – MandirMitra Bulk Pass Generator (Local Development)
+# Two-tier architecture: Python Flask Frontend + Redis In-Memory Backend
+# Usage: docker compose up --build
+# =============================================================================
+
+services:
+  frontend:
+    build: ./frontend
+    container_name: pass-frontend
+    ports:
+      - "8080:8080"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - MAX_BATCH=200
+      - CACHE_TTL=300
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - passnet
+
+  redis:
+    image: redis:7-alpine
+    container_name: pass-redis
+    # In-memory cache tier: 64 MB memory limit with allkeys-LRU eviction policy
+    command: >
+      redis-server
+      --maxmemory 64mb
+      --maxmemory-policy allkeys-lru
+      --save ""
+      --appendonly no
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    networks:
+      - passnet
+
+networks:
+  passnet:
+    driver: bridge

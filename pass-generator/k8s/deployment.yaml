@@ -1,0 +1,62 @@
+# =============================================================================
+# deployment.yaml
+# Assignment requirement: Tier 1 – Frontend Deployment
+# Runs the Flask/Gunicorn Darshan Pass Generator as a Kubernetes Deployment.
+# Image is pulled from Azure Container Registry (placeholder <ACR_NAME>).
+# Readiness probe ensures traffic is routed only when Redis is reachable.
+# Liveness probe restarts the pod only if the web server process itself hangs.
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pass-frontend
+  labels:
+    app: pass-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pass-frontend
+  template:
+    metadata:
+      labels:
+        app: pass-frontend
+    spec:
+      containers:
+        - name: pass-frontend
+          # Replace <ACR_NAME> with your actual Azure Container Registry name
+          image: <ACR_NAME>.azurecr.io/pass-frontend:v1
+          ports:
+            - containerPort: 8080
+          env:
+            - name: REDIS_HOST
+              value: "redis"
+            - name: REDIS_PORT
+              value: "6379"
+            - name: MAX_BATCH
+              value: "200"
+            - name: CACHE_TTL
+              value: "300"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "200m"
+              # Memory limit is 4x request to accommodate in-memory bulk PDF
+              # rendering (up to 200 pages) via BytesIO without OOM kills.
+              memory: "512Mi"
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3

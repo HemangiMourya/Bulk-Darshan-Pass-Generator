@@ -1,0 +1,20 @@
+# =============================================================================
+# service.yaml
+# Assignment requirement: Expose the frontend via an Azure Load Balancer
+# A LoadBalancer Service maps external port 80 to the frontend container's
+# port 8080, making MandirMitra accessible from the internet.
+# =============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: pass-frontend-svc
+  labels:
+    app: pass-frontend
+spec:
+  type: LoadBalancer
+  selector:
+    app: pass-frontend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
